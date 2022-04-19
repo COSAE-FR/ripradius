@@ -1,0 +1,231 @@
+# -*- text -*-
+##
+##  eap.conf -- Configuration for EAP types (PEAP, TTLS, etc.)
+##
+
+#######################################################################
+#
+#  Whatever you do, do NOT set 'Auth-Type := EAP'.  The server
+#  is smart enough to figure this out on its own.  The most
+#  common side effect of setting 'Auth-Type := EAP' is that the
+#  users then cannot use ANY other authentication method.
+#
+eap {
+	#  Invoke the default supported EAP type when
+	#  EAP-Identity response is received.
+	#
+	default_eap_type = peap
+
+	#  A list is maintained to correlate EAP-Response
+	#  packets with EAP-Request packets.  After a
+	#  configurable length of time, entries in the list
+	#  expire, and are deleted.
+	#
+	timer_expire     = 60
+
+	#  There are many EAP types, but the server has support
+	#  for only a limited subset.  If the server receives
+	#  a request for an EAP type it does not support, then
+	#  it normally rejects the request.  By setting this
+	#  configuration to "yes", you can tell the server to
+	#  instead keep processing the request.  Another module
+	#  MUST then be configured to proxy the request to
+	#  another RADIUS server which supports that EAP type.
+	#
+	#  If another module is NOT configured to handle the
+	#  request, then the request will still end up being
+	#  rejected.
+	ignore_unknown_eap_types = no
+
+	# Cisco AP1230B firmware 12.2(13)JA1 has a bug.  When given
+	# a User-Name attribute in an Access-Accept, it copies one
+	# more byte than it should.
+	#
+	# We can work around it by configurably adding an extra
+	# zero byte.
+	cisco_accounting_username_bug = no
+
+	#
+	#  Help prevent DoS attacks by limiting the number of
+	#  sessions that the server is tracking.  For simplicity,
+	#  this is taken from the "max_requests" directive in
+	#  radiusd.conf.
+	max_sessions = ${max_requests}
+
+	# Supported EAP-types
+
+	## Common TLS configuration for TLS-based EAP types
+	#
+	tls-config tls-common {
+		private_key_file = {{.RadiusPrivateKey}}
+
+		certificate_file = {{.RadiusCertificateBundle}}
+
+		#  Trusted Root CA list
+		#
+		ca_file = {{.RadiusCertificateAuthority}}
+
+	 	#  OpenSSL will automatically create certificate chains,
+	 	#  unless we tell it to not do that.  The problem is that
+	 	#  it sometimes gets the chains right from a certificate
+	 	#  signature view, but wrong from the clients view.
+		#
+		auto_chain = no
+
+		#
+		#  For DH cipher suites to work, you have to
+		#  run OpenSSL to create the DH file first:
+		#
+		#  	openssl dhparam -out certs/dh 2048
+		#
+		dh_file = {{.RadiusDHParam}}
+
+		#  include_length is a flag which is
+		#  by default set to yes If set to
+		#  yes, Total Length of the message is
+		#  included in EVERY packet we send.
+		#  If set to no, Total Length of the
+		#  message is included ONLY in the
+		#  First packet of a fragment series.
+		#
+		include_length = yes
+
+		#
+		# Set this option to specify the allowed
+		# TLS cipher suites.  The format is listed
+		# in "man 1 ciphers".
+		#
+		cipher_list = "DEFAULT"
+
+		# If enabled, OpenSSL will use server cipher list
+		# (possibly defined by cipher_list option above)
+		# for choosing right cipher suite rather than
+		# using client-specified list which is OpenSSl default
+		# behavior. Having it set to yes is a current best practice
+		# for TLS
+		cipher_server_preference = yes
+
+		#
+		#  You can selectively disable TLS versions for
+		#  compatability with old client devices.
+		#
+		#  If your system has OpenSSL 1.1.0 or greater, do NOT
+		#  use these.  Instead, set tls_min_version and
+		#  tls_max_version.
+		#
+#		disable_tlsv1_2 = no
+#		disable_tlsv1_1 = no
+#		disable_tlsv1 = no
+
+		#
+		#  Set min / max TLS version.  Mainly for Debian
+		#  "trusty", which disables older versions of TLS, and
+		#  requires the application to manually enable them.
+		#
+		#  If you are running Debian trusty, you should set
+		#  these options, otherwise older clients will not be
+		#  able to connect.
+		#
+		#  Allowed values are "1.0", "1.1", and "1.2".
+		#
+		#  The values must be in quotes.
+		#
+#		tls_min_version = "1.0"
+#		tls_max_version = "1.2"
+
+
+		#
+		#  Elliptical cryptography configuration
+		#
+		#  Only for OpenSSL >= 0.9.8.f
+		#
+		ecdh_curve = "prime256v1"
+
+		#
+		#  Session resumption / fast reauthentication cache.
+		#
+		cache {
+			enable = no
+		}
+
+		verify {}
+
+		#
+		#  OCSP Configuration
+		#
+		ocsp {
+			enable = no
+		}
+	}
+
+
+	## EAP-PEAP
+	#
+	#
+	#  The tunneled EAP session needs a default EAP type
+	#  which is separate from the one for the non-tunneled
+	#  EAP module.  Inside of the TLS/PEAP tunnel, we
+	#  recommend using EAP-MS-CHAPv2.
+	#
+	peap {
+		#  Which tls-config section the TLS negotiation parameters
+		#  are in - see EAP-TLS above for an explanation.
+		#
+		#  In the case that an old configuration from FreeRADIUS
+		#  v2.x is being used, all the options of the tls-config
+		#  section may also appear instead in the 'tls' section
+		#  above. If that is done, the tls= option here (and in
+		#  tls above) MUST be commented out.
+		#
+		tls = tls-common
+
+		#  The tunneled EAP session needs a default
+		#  EAP type which is separate from the one for
+		#  the non-tunneled EAP module.  Inside of the
+		#  PEAP tunnel, we recommend using MS-CHAPv2,
+		#  as that is the default type supported by
+		#  Windows clients.
+		#
+		default_eap_type = mschapv2
+
+		copy_request_to_tunnel = yes
+
+		use_tunneled_reply = no
+
+		#
+		#  The inner tunneled request can be sent
+		#  through a virtual server constructed
+		#  specifically for this purpose.
+		#
+		virtual_server = "inner-tunnel"
+	}
+
+	#
+	#  This takes no configuration.
+	#
+	mschapv2 {
+		#  Prior to version 2.1.11, the module never
+		#  sent the MS-CHAP-Error message to the
+		#  client.  This worked, but it had issues
+		#  when the cached password was wrong.  The
+		#  server *should* send "E=691 R=0" to the
+		#  client, which tells it to prompt the user
+		#  for a new password.
+		#
+		#  The default is to behave as in 2.1.10 and
+		#  earlier, which is known to work.  If you
+		#  set "send_error = yes", then the error
+		#  message will be sent back to the client.
+		#  This *may* help some clients work better,
+		#  but *may* also cause other clients to stop
+		#  working.
+		#
+#		send_error = no
+
+		#  Server identifier to send back in the challenge.
+		#  This should generally be the host name of the
+		#  RADIUS server.  Or, some information to uniquely
+		#  identify it.
+		identity = "RIPAuthentication"
+	}
+}

@@ -1,0 +1,12 @@
+server default {
+    listen {
+            type = auth
+            ipv4addr = {{.ListenAddress}}
+            port = {{.ListenPort}}
+            limit {
+                          max_connections = 16
+                          lifetime = 0
+                          idle_timeout = 30
+            }
+    }
+}

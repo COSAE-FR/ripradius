@@ -1,0 +1,168 @@
+# -*- text -*-
+######################################################################
+#
+#	This is a virtual server that handles *only* inner tunnel
+#	requests for EAP-TTLS and PEAP types.
+#
+#	$Id: 2c6f9611bfc7b4b782aeb9764e47e832690739c4 $
+#
+######################################################################
+
+server inner-tunnel {
+
+
+authorize {
+	update control { &REST-HTTP-Header += "Authorization: Bearer {{.ApiToken}}" }
+	#
+	#  Take a User-Name, and perform some checks on it, for spaces and other
+	#  invalid characters.  If the User-Name appears invalid, reject the
+	#  request.
+	#
+	#  See policy.d/filter for the definition of the filter_username policy.
+	#
+	filter_username
+
+	#
+	#  If the users are logging in with an MS-CHAP-Challenge
+	#  attribute for authentication, the mschap module will find
+	#  the MS-CHAP-Challenge attribute, and add 'Auth-Type := MS-CHAP'
+	#  to the request, which will cause the server to then use
+	#  the mschap module for authentication.
+	mschap
+
+	#
+	#  The "suffix" module takes care of stripping the domain
+	#  (e.g. "@example.com") from the User-Name attribute, and the
+	#  next few lines ensure that the request is not proxied.
+	#
+	#  If you want the inner tunnel request to be proxied, delete
+	#  the next few lines.
+	#
+	update control {
+		&Proxy-To-Realm := LOCAL
+	}
+
+	#
+	#  This module takes care of EAP-MSCHAPv2 authentication.
+	#
+	#  It also sets the EAP-Type attribute in the request
+	#  attribute list to the EAP type from the packet.
+	#
+	#  The example below uses module failover to avoid querying all
+	#  of the following modules if the EAP module returns "ok".
+	#  Therefore, your LDAP and/or SQL servers will not be queried
+	#  for the many packets that go back and forth to set up TTLS
+	#  or PEAP.  The load on those servers will therefore be reduced.
+	#
+	eap {
+		ok = return
+	}
+
+
+        -rest
+
+	expiration
+	logintime
+
+	#
+	#  If no other module has claimed responsibility for
+	#  authentication, then try to use PAP.  This allows the
+	#  other modules listed above to add a "known good" password
+	#  to the request, and to do nothing else.  The PAP module
+	#  will then see that password, and use it to do PAP
+	#  authentication.
+	#
+	#  This module should be listed last, so that the other modules
+	#  get a chance to set Auth-Type for themselves.
+	#
+	pap
+}
+
+
+authenticate {
+	#
+	#  PAP authentication, when a back-end database listed
+	#  in the 'authorize' section supplies a password.  The
+	#  password can be clear-text, or encrypted.
+	Auth-Type PAP {
+		pap
+	}
+
+	#
+	#  Most people want CHAP authentication
+	#  A back-end database listed in the 'authorize' section
+	#  MUST supply a CLEAR TEXT password.  Encrypted passwords
+	#  won't work.
+	Auth-Type CHAP {
+		chap
+	}
+
+	#
+	#  MSCHAP authentication.
+	Auth-Type MS-CHAP {
+		mschap
+	}
+
+	#
+	#  For old names, too.
+	#
+	mschap
+
+	#
+	#  Allow EAP authentication.
+	eap
+}
+
+
+#  Post-Authentication
+#  Once we KNOW that the user has been authenticated, there are
+#  additional steps we can take.
+#
+#  Note that the last packet of the inner-tunnel authentication
+#  MAY NOT BE the last packet of the outer session.  So updating
+#  the outer reply MIGHT work, and sometimes MIGHT NOT.  The
+#  exact functionality depends on both the inner and outer
+#  authentication methods.
+#
+post-auth {
+	#
+	#  Instead of "use_tunneled_reply", uncomment the
+	#  next two "update" blocks.
+	#
+	update {
+		&outer.session-state: += &reply:
+	}
+
+	#
+	#  These attributes are for the inner session only.
+	#  They MUST NOT be sent in the outer reply.
+	#
+	#  If you uncomment the previous block and leave
+	#  this one commented out, WiFi WILL NOT WORK,
+	#  because the client will get two MS-MPPE-keys
+	#
+	update outer.session-state {
+		MS-MPPE-Encryption-Policy !* ANY
+		MS-MPPE-Encryption-Types !* ANY
+		MS-MPPE-Send-Key !* ANY
+		MS-MPPE-Recv-Key !* ANY
+		Message-Authenticator !* ANY
+		EAP-Message !* ANY
+		Proxy-State !* ANY
+	}
+
+	#
+	#  Access-Reject packets are sent through the REJECT sub-section of the
+	#  post-auth section.
+	#
+	#  Add the ldap module name (or instance) if you have set
+	#  'edir_account_policy_check = yes' in the ldap module configuration
+	#
+	Post-Auth-Type REJECT {
+		update outer.session-state {
+			&Module-Failure-Message := &request:Module-Failure-Message
+		}
+	}
+}
+
+} # inner-tunnel server block

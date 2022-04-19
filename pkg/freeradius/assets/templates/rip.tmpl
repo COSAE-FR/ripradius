@@ -1,0 +1,31 @@
+server rip {
+
+#listen {
+#	type = auth
+#	ipaddr = *
+#	port = 0
+#	limit {
+#	      max_connections = 16
+#	      lifetime = 0
+#	      idle_timeout = 30
+#	}
+#}
+
+authorize {
+    mschap
+    update control { &REST-HTTP-Header += "Authorization: Bearer {{.ApiToken}}" }
+    rest
+    pap
+}
+
+# this section can be left empty
+authenticate {
+    #
+    #  MSCHAP authentication.
+    Auth-Type MS-CHAP {
+            mschap
+    }
+    mschap
+}
+
+}
