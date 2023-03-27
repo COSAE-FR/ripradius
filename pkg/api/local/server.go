@@ -41,7 +41,7 @@ func New(logger *log.Entry, config *Configuration, userCache *cache.Cache, upstr
 		log:    logger.WithField("component", "api_server"),
 	}
 	router.Use(ginlog.Logger(srv.log), gin.Recovery())
-	// router.GET("/api/v1/status", srv.status)
+	router.GET("/api/v1/status", srv.status)
 	operational := router.Group("/")
 	if len(config.Token) > 0 {
 		srv.log.Debug("Configuring token authentication")

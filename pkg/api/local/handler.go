@@ -13,9 +13,9 @@ import (
 func (s *Server) refreshUser(c *gin.Context, requestedUser *binding.UserRequest, errorFunc gin.HandlerFunc) {
 	var serverOffline bool
 	logger := s.log.WithFields(map[string]interface{}{
-		"user": requestedUser.Username,
+		"user":    requestedUser.Username,
 		"src_mac": requestedUser.GetClientMac(),
-		"src_ip": requestedUser.ClientIp,
+		"src_ip":  requestedUser.ClientIp,
 	})
 	defer func() {
 		if serverOffline {
@@ -63,9 +63,9 @@ func (s *Server) userAuthorize(c *gin.Context) {
 		return
 	}
 	logger := s.log.WithFields(map[string]interface{}{
-		"user": userRequest.Username,
+		"user":    userRequest.Username,
 		"src_mac": userRequest.GetClientMac(),
-		"src_ip": userRequest.ClientIp,
+		"src_ip":  userRequest.ClientIp,
 	})
 	cachedUser, mustRefresh, found := s.cache.GetUserWithRefreshNeed(userRequest.Username, userRequest.GetClientMac())
 	if !found {
@@ -85,3 +85,7 @@ func (s *Server) userAuthorize(c *gin.Context) {
 	helpers.RadiusAcceptUser(c, cachedUser.Password, cachedUser.VlanId, logger)
 }
 
+func (s *Server) status(c *gin.Context) {
+	cacheStatus := s.cache.Status()
+	c.AbortWithStatusJSON(http.StatusOK, &binding.ServerStatus{Cache: cacheStatus})
+}

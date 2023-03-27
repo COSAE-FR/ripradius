@@ -1,6 +1,7 @@
 package binding
 
 import (
+	"github.com/COSAE-FR/ripradius/pkg/local/cache"
 	"strings"
 )
 
@@ -39,4 +40,8 @@ type RadiusAdminResponse struct {
 
 type RadiusRejectResponse struct {
 	AuthType string `json:"control:Auth-Type" default:"Reject"`
+}
+
+type ServerStatus struct {
+	Cache cache.Status `json:"cache"`
 }
