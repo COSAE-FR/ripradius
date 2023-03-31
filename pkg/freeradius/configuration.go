@@ -22,23 +22,25 @@ type Configuration struct {
 	// Make Freeradius listen on this interface
 	Interface    string `yaml:"interface"`
 	InterfaceNet string `yaml:"-"`
-	InterfaceIP string `yaml:"-"`
+	InterfaceIP  string `yaml:"-"`
 	// Make Freeradius listen on this port
 	Port uint32 `yaml:"port" default:"1812"`
 	// Base directory for configuration files
 	RunDirectory string `yaml:"run_directory"`
 	CleanOnStop  bool   `yaml:"clean_on_stop"`
-	StayRoot bool `yaml:"stay_root"`
+	StayRoot     bool   `yaml:"stay_root"`
 	// Freeradius secret
-	Secret      string `yaml:"secret"`
-	CA          string `yaml:"ca"`
-	Certificate string `yaml:"certificate"`
-	Key         string `yaml:"key"`
-	ApiToken    string
-	ApiHost     string
-	ApiPort     uint32
-	EnableAdmin bool `yaml:"enable_admin"`
-	ClientNet string `yaml:"client_net" validate:"isdefault|cidrv4"`
+	Secret          string `yaml:"secret"`
+	CA              string `yaml:"ca"`
+	EnableAutoChain bool   `yaml:"enable_auto_chain"`
+	NoBundle        bool   `yaml:"no_bundle"`
+	Certificate     string `yaml:"certificate"`
+	Key             string `yaml:"key"`
+	ApiToken        string
+	ApiHost         string
+	ApiPort         uint32
+	EnableAdmin     bool   `yaml:"enable_admin"`
+	ClientNet       string `yaml:"client_net" validate:"isdefault|cidrv4"`
 }
 
 func (c *Configuration) Check() error {

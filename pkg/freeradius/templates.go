@@ -31,6 +31,7 @@ type TemplatesConfiguration struct {
 	RadiusPrivateKey           string
 	RadiusCertificateBundle    string
 	RadiusCertificateAuthority string
+	RadiusAutoChain            string
 	RadiusDHParam              string
 	RadiusSecret               string
 	ApiServer                  string
@@ -142,7 +143,6 @@ func (f *Freeradius) prepareConfiguration() error {
 		}
 	} else {
 
-
 	}
 	clientNet := f.config.ClientNet
 	if clientNet == "" {
@@ -152,6 +152,10 @@ func (f *Freeradius) prepareConfiguration() error {
 	if f.config.EnableAdmin {
 		listenIP = f.config.InterfaceIP
 	}
+	autoCAChain := "no"
+	if f.config.EnableAutoChain {
+		autoCAChain = "yes"
+	}
 
 	templatesConfig := TemplatesConfiguration{
 		RadiusConfDir:           configurationBase,
@@ -159,6 +163,7 @@ func (f *Freeradius) prepareConfiguration() error {
 		RadiusPrivateKey:        path.Join(configurationBase, "tls", "private.pem"),
 		RadiusCertificateBundle: path.Join(configurationBase, "tls", "bundle.pem"),
 		RadiusDHParam:           path.Join(configurationBase, "tls", "dhparam.pem"),
+		RadiusAutoChain:         autoCAChain,
 		RadiusSecret:            f.config.Secret,
 		ApiToken:                f.config.ApiToken,
 		ApiServer:               fmt.Sprintf("http://%s:%d", f.config.ApiHost, f.config.ApiPort),
@@ -262,7 +267,11 @@ func (f *Freeradius) prepareTlsConfiguration(configurationBase string, templates
 		f.log.Errorf("TLS: cannot write key %s: %s", templatesConfig.RadiusPrivateKey, err)
 		return err
 	}
-	if err = ioutil.WriteFile(templatesConfig.RadiusCertificateBundle, []byte(fmt.Sprintf("%s\n%s", f.config.Certificate, f.config.CA)), 0664); err != nil {
+	bundle := f.config.Certificate
+	if f.config.NoBundle == false {
+		bundle = fmt.Sprintf("%s\n%s", bundle, f.config.CA)
+	}
+	if err = ioutil.WriteFile(templatesConfig.RadiusCertificateBundle, []byte(bundle), 0664); err != nil {
 		f.log.Errorf("TLS: cannot write bundle %s: %s", templatesConfig.RadiusCertificateBundle, err)
 		return err
 	}

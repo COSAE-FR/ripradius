@@ -70,7 +70,7 @@ eap {
 	 	#  it sometimes gets the chains right from a certificate
 	 	#  signature view, but wrong from the clients view.
 		#
-		auto_chain = no
+		auto_chain = {{.RadiusAutoChain}}
 
 		#
 		#  For DH cipher suites to work, you have to
