@@ -12,7 +12,7 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version of ripradius",
+	Short: fmt.Sprintf("Print the version of %s", utils.Name),
 	Run: func(cmd *cobra.Command, args []string) {
 		if asJSON {
 			printJSON(map[string]string{

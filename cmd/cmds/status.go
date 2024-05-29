@@ -15,7 +15,7 @@ func init() {
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Print the status of the running ripradius",
+	Short: fmt.Sprintf("Print the status of the running %s", utils.Name),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := getDaemonConfig()
 		if err != nil {

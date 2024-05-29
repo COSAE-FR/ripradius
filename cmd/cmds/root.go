@@ -17,8 +17,8 @@ var (
 
 	rootCmd = &cobra.Command{
 		Use:   "radiusctl",
-		Short: "Control ripradius daemon",
-		Long:  `Control and show stats from the ripradius daemon.`,
+		Short: fmt.Sprintf("Control the %s daemon", utils.Name),
+		Long:  fmt.Sprintf("Control and show stats from the %s daemon.", utils.Name),
 	}
 )
 
