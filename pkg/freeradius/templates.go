@@ -45,6 +45,15 @@ type TemplatesConfiguration struct {
 	ListenPort                 uint32
 	ClientNet                  string
 	PrefixDirectory            string
+	MaxRequestTime             uint8
+	CleanupDelay               uint8
+	MaxRequests                uint64
+	LogAuth                    string
+	StartServers               uint16
+	MaxServers                 uint16
+	MinSpareServers            uint16
+	MaxSpareServers            uint16
+	MaxQueueSize               uint32
 }
 
 func (f *Freeradius) prepareConfiguration() error {
@@ -157,6 +166,11 @@ func (f *Freeradius) prepareConfiguration() error {
 		autoCAChain = "yes"
 	}
 
+	logAuth := "no"
+	if f.config.LogAuth {
+		logAuth = "yes"
+	}
+
 	templatesConfig := TemplatesConfiguration{
 		RadiusConfDir:           configurationBase,
 		RadiusLibDir:            libDir,
@@ -176,6 +190,15 @@ func (f *Freeradius) prepareConfiguration() error {
 		ListenPort:              f.config.Port,
 		ClientNet:               clientNet,
 		PrefixDirectory:         prefixDir,
+		MaxRequestTime:          f.config.MaxRequestTime,
+		CleanupDelay:            f.config.CleanupDelay,
+		MaxRequests:             f.config.MaxRequests,
+		LogAuth:                 logAuth,
+		StartServers:            f.config.StartServers,
+		MaxServers:              f.config.MaxServers,
+		MinSpareServers:         f.config.MinSpareServers,
+		MaxSpareServers:         f.config.MaxSpareServers,
+		MaxQueueSize:            f.config.MaxQueueSize,
 	}
 
 	if len(f.config.CA) > 0 {

@@ -154,7 +154,7 @@ correct_escapes = true
 #
 #  Useful range of values: 5 to 120
 #
-max_request_time = 30
+max_request_time = {{ .MaxRequestTime }}
 
 #  cleanup_delay: The time to wait (in seconds) before cleaning up
 #  a reply which was sent to the NAS.
@@ -173,7 +173,7 @@ max_request_time = 30
 #
 #  Useful range of values: 2 to 10
 #
-cleanup_delay = 5
+cleanup_delay = {{ .CleanupDelay }}
 
 #  max_requests: The maximum number of requests which the server keeps
 #  track of.  This should be 256 multiplied by the number of clients.
@@ -192,7 +192,7 @@ cleanup_delay = 5
 #
 #  Useful range of values: 256 to infinity
 #
-max_requests = 16384
+max_requests = {{ .MaxRequests }}
 
 #  hostname_lookups: Log the names of clients or just their IP addresses
 #  e.g., www.freeradius.org (on) or 206.47.27.232 (off).
@@ -248,7 +248,7 @@ log {
 	#
 	#  allowed values: {no, yes}
 	#
-	auth = no
+	auth = {{.LogAuth}}
 
 	#  Log passwords with the authentication requests.
 	#  auth_badpass  - logs password if it's rejected
@@ -435,7 +435,7 @@ proxy_requests  = no
 thread pool {
 	#  Number of servers to start initially --- should be a reasonable
 	#  ballpark figure.
-	start_servers = 5
+	start_servers = {{.StartServers}}
 
 	#  Limit on the total number of servers running.
 	#
@@ -458,7 +458,7 @@ thread pool {
 	#
 	#  For more information, see 'max_request_time', above.
 	#
-	max_servers = 32
+	max_servers = {{.MaxServers}}
 
 	#  Server-pool size regulation.  Rather than making you guess
 	#  how many servers you need, FreeRADIUS dynamically adapts to
@@ -472,8 +472,8 @@ thread pool {
 	#  more than max_spare_servers, some of the spares die off.
 	#  The default values are probably OK for most sites.
 	#
-	min_spare_servers = 3
-	max_spare_servers = 10
+	min_spare_servers = {{.MinSpareServers}}
+	max_spare_servers = {{.MaxSpareServers}}
 
 	#  When the server receives a packet, it places it onto an
 	#  internal queue, where the worker threads (configured above)
@@ -490,7 +490,7 @@ thread pool {
 	#  receives less traffic, or make sure that the database can
 	#  handle the load.
 	#
-#	max_queue_size = 65536
+	max_queue_size = {{.MaxQueueSize}}
 
 	#  Clean up old threads periodically.  For no reason other than
 	#  it might be useful.
@@ -519,7 +519,7 @@ thread pool {
 	#  to see how accounting packets should be retransmitted.  Using
 	#  any other method is likely to cause network meltdowns.
 	#
-	auto_limit_acct = no
+	auto_limit_acct = yes
 }
 
 # MODULE CONFIGURATION
@@ -530,34 +530,6 @@ thread pool {
 #  in other sections of this configuration file.
 #
 modules {
-	#
-	#  Each module has a configuration as follows:
-	#
-	#	name [ instance ] {
-	#		config_item = value
-	#		...
-	#	}
-	#
-	#  The 'name' is used to load the 'rlm_name' library
-	#  which implements the functionality of the module.
-	#
-	#  The 'instance' is optional.  To have two different instances
-	#  of a module, it first must be referred to by 'name'.
-	#  The different copies of the module are then created by
-	#  inventing two 'instance' names, e.g. 'instance1' and 'instance2'
-	#
-	#  The instance names can then be used in later configuration
-	#  INSTEAD of the original 'name'.  See the 'radutmp' configuration
-	#  for an example.
-	#
-
-	#
-	#  As of 3.0, modules are in mods-enabled/.  Files matching
-	#  the regex /[a-zA-Z0-9_.]+/ are loaded.  The modules are
-	#  initialized ONLY if they are referenced in a processing
-	#  section, such as authorize, authenticate, accounting,
-	#  pre/post-proxy, etc.
-	#
 	$INCLUDE mods-enabled/
 }
 
@@ -567,71 +539,8 @@ modules {
 #  listed here will get loaded BEFORE the later sections like
 #  authorize, authenticate, etc. get examined.
 #
-#  This section is not strictly needed.  When a section like
-#  authorize refers to a module, it's automatically loaded and
-#  initialized.  However, some modules may not be listed in any
-#  of the following sections, so they can be listed here.
-#
-#  Also, listing modules here ensures that you have control over
-#  the order in which they are initialized.  If one module needs
-#  something defined by another module, you can list them in order
-#  here, and ensure that the configuration will be OK.
-#
-#  After the modules listed here have been loaded, all of the modules
-#  in the "mods-enabled" directory will be loaded.  Loading the
-#  "mods-enabled" directory means that unlike Version 2, you usually
-#  don't need to list modules here.
-#
 instantiate {
-	#
-	# We list the counter module here so that it registers
-	# the check_name attribute before any module which sets
-	# it
-#	daily
 
-	# subsections here can be thought of as "virtual" modules.
-	#
-	# e.g. If you have two redundant SQL servers, and you want to
-	# use them in the authorize and accounting sections, you could
-	# place a "redundant" block in each section, containing the
-	# exact same text.  Or, you could uncomment the following
-	# lines, and list "redundant_sql" in the authorize and
-	# accounting sections.
-	#
-	#  The "virtual" module defined here can also be used with
-	#  dynamic expansions, under a few conditions:
-	#
-	#  * The section is "redundant", or "load-balance", or
-	#    "redundant-load-balance"
-	#  * The section contains modules ONLY, and no sub-sections
-	#  * all modules in the section are using the same rlm_
-	#    driver, e.g. They are all sql, or all ldap, etc.
-	#
-	#  When those conditions are satisfied, the server will
-	#  automatically register a dynamic expansion, using the
-	#  name of the "virtual" module.  In the example below,
-	#  it will be "redundant_sql".  You can then use this expansion
-	#  just like any other:
-	#
-	#	update reply {
-	#		Filter-Id := "%{redundant_sql: ... }"
-	#	}
-	#
-	#  In this example, the expansion is done via module "sql1",
-	#  and if that expansion fails, using module "sql2".
-	#
-	#  For best results, configure the "pool" subsection of the
-	#  module so that "retry_delay" is non-zero.  That will allow
-	#  the redundant block to quickly ignore all "down" SQL
-	#  databases.  If instead we have "retry_delay = 0", then
-	#  every time the redundant block is used, the server will try
-	#  to open a connection to every "down" database, causing
-	#  problems.
-	#
-	#redundant redundant_sql {
-	#	sql1
-	#	sql2
-	#}
 }
 
 {{ if ne .RadiusSecret "" }}

@@ -41,6 +41,24 @@ type Configuration struct {
 	ApiPort         uint32
 	EnableAdmin     bool   `yaml:"enable_admin"`
 	ClientNet       string `yaml:"client_net" validate:"isdefault|cidrv4"`
+	// radiusd.conf tuning
+	// MaxRequestTime The maximum time (in seconds) to handle a request (5 to 120).
+	MaxRequestTime uint8 `yaml:"max_request_time" default:"30"`
+	// CleanupDelayThe time to wait (in seconds) before cleaning up (2 to 10)
+	CleanupDelay uint8 `yaml:"cleanup_delay" default:"5"`
+	// MaxRequests: The maximum number of requests which the server keeps
+	// track of.  This should be 256 multiplied by the number of clients.
+	// (min 256)
+	MaxRequests uint64 `yaml:"max_requests" default:"16384"`
+	LogAuth     bool   `yaml:"log_auth"`
+	// StartServers: Number of servers to start initially
+	StartServers uint16 `yaml:"start_servers" default:"5"`
+	// MaxServers: Limit on the total number of servers running.
+	MaxServers uint16 `yaml:"max_servers" default:"32"`
+	// Server-pool size regulation
+	MinSpareServers uint16 `yaml:"min_spare_servers" default:"3"`
+	MaxSpareServers uint16 `yaml:"max_spare_servers" default:"10"`
+	MaxQueueSize    uint32 `yaml:"max_queue_size" default:"65536"`
 }
 
 func (c *Configuration) Check() error {
